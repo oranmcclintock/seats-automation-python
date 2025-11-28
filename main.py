@@ -3,14 +3,13 @@ import random
 import logging
 from datetime import datetime, timedelta
 from typing import List
-
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from apscheduler.schedulers.background import BackgroundScheduler
-
 from database import engine, Base, get_db
 import models
 import schemas
@@ -26,6 +25,7 @@ logger = logging.getLogger("SeatsApp")
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SEAtS Automation Web App")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 scheduler = BackgroundScheduler()

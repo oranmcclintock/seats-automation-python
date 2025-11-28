@@ -4,97 +4,185 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEAtS Automation</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
         :root {
-            --primary-bg: #f3f4f6;
-            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            /* SEAtS Inspired Palette */
+            --seats-navy: #1a365d;   /* Main Header Color */
+            --seats-orange: #1E73BE; /* Brand Accent */
+            --seats-teal: #0d9488;   /* Success/Check-in */
+            --seats-bg: #f3f4f6;     /* App Background */
+            
+            --text-main: #374151;
+            --text-light: #6b7280;
+            
+            --status-active: #10b981; /* Soft Green */
+            --status-paused: #f59e0b; /* Soft Amber */
         }
-        body { 
-            background-color: var(--primary-bg); 
+
+        body {
+            background-color: var(--seats-bg);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
         }
+
+        /* Navbar */
         .navbar {
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            padding: 1rem 0;
             margin-bottom: 2rem;
         }
         .navbar-brand {
-            font-weight: 700;
-            color: #4f46e5 !important;
+            font-weight: 800;
+            color: var(--seats-navy) !important;
+            font-size: 1.5rem;
+            letter-spacing: -0.5px;
         }
-        .card { 
-            border: none; 
-            border-radius: 12px; 
-            box-shadow: var(--card-shadow); 
+        .navbar-brand span {
+            color: var(--seats-orange);
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             background: #fff;
-            margin-bottom: 24px;
+            overflow: hidden;
+            transition: transform 0.2s;
         }
         .card-header {
-            background: transparent;
+            background: #fff;
             border-bottom: 1px solid #f0f0f0;
             padding: 1.5rem;
         }
         .card-header h5 {
+            color: var(--seats-navy);
+            font-weight: 700;
             margin: 0;
-            font-weight: 600;
-            color: #1f2937;
         }
-        .card-body {
-            padding: 1.5rem;
-        }
+
+        /* Primary Action Buttons */
         .btn-primary {
-            background-color: #4f46e5;
-            border-color: #4f46e5;
+            background-color: var(--seats-orange);
+            border-color: var(--seats-orange);
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
         }
         .btn-primary:hover {
-            background-color: #4338ca;
-            border-color: #4338ca;
+            background-color: #ea580c;
+            border-color: #ea580c;
         }
-        .table > :not(caption) > * > * {
-            padding: 1rem;
+
+        /* Table Styling */
+        .table { margin-bottom: 0; }
+        .table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-light);
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+        }
+        .table td {
             vertical-align: middle;
+            padding: 1rem 1.5rem;
         }
+
+        /* Status Badges */
         .status-badge {
-            font-size: 0.85rem;
-            padding: 0.35em 0.65em;
-            border-radius: 6px;
-            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.35em 0.8em;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
         }
+        .status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .status-paused {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        /* Lesson Items */
         .lesson-item {
-            border-left: 4px solid #4f46e5;
-            margin-bottom: 10px;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid var(--seats-navy);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
             background: #fff;
+            transition: all 0.2s;
+        }
+        .lesson-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-color: #d1d5db;
         }
         .lesson-time {
-            font-size: 1.1rem;
+            color: var(--seats-navy);
             font-weight: 700;
-            color: #374151;
+            font-size: 1.1rem;
         }
         .lesson-title {
-            font-weight: 500;
-            color: #4b5563;
+            color: var(--text-main);
+            font-weight: 600;
         }
         .lesson-room {
-            font-size: 0.85rem;
-            color: #9ca3af;
+            line-height: 1.4;
         }
-        
-        /* Custom Toggle Switch styling */
+
+        /* Check-In Button Styling (UPDATED) */
+        .btn-checkin {
+            color: var(--seats-teal);
+            border: 1px solid var(--seats-teal);
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            
+            /* Consistency Fixes */
+            min-width: 150px;       /* Fixed width */
+            flex-shrink: 0;         /* Prevent shrinking on flex */
+            white-space: nowrap;    /* Keep text on one line */
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-checkin:hover {
+            background-color: var(--seats-teal);
+            color: #fff;
+        }
+        .btn-checkin:disabled {
+            border-color: #d1d5db;
+            color: #9ca3af;
+            background-color: transparent;
+        }
+
+        /* Toggle Switch */
         .form-switch .form-check-input {
             width: 3em;
             height: 1.5em;
             cursor: pointer;
+            border: none;
+            background-color: #e5e7eb;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
         }
         .form-switch .form-check-input:checked {
-            background-color: #10b981;
-            border-color: #10b981;
+            background-color: var(--status-active);
         }
         .form-switch .form-check-input:not(:checked) {
-            background-color: #ef4444; /* Red/Orange for Paused */
-            border-color: #ef4444;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+            background-color: #f59e0b;
         }
     </style>
 </head>
@@ -103,10 +191,12 @@
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="bi bi-robot"></i> SEAtS Auto
+                <img src="/static/logo.png" alt="Logo" height="30" class="me-2">
+                FUCK <span>SEAtS</span>
             </a>
-            <div class="ms-auto text-muted small">
-                <span id="clock">Loading time...</span>
+            <div class="d-flex align-items-center text-secondary small fw-medium">
+                <i class="bi bi-clock me-2"></i>
+                <span id="clock">Loading...</span>
             </div>
         </div>
     </nav>
@@ -117,24 +207,24 @@
             <div class="col-md-4">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h5><i class="bi bi-person-plus"></i> Add Account</h5>
+                        <h5>Add Account</h5>
                     </div>
                     <div class="card-body">
                         <form id="addUserForm">
                             <div class="mb-3">
                                 <label class="form-label small text-muted text-uppercase fw-bold">Alias</label>
-                                <input type="text" class="form-control" id="alias" placeholder="e.g. My Personal Account" required>
+                                <input type="text" class="form-control bg-light border-0" id="alias" placeholder="e.g. Personal" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label small text-muted text-uppercase fw-bold">Bearer Token</label>
-                                <textarea class="form-control" id="token" rows="3" placeholder="Paste full token here..." required></textarea>
+                                <textarea class="form-control bg-light border-0" id="token" rows="3" placeholder="Paste token here..." required></textarea>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label small text-muted text-uppercase fw-bold">Webhook (Optional)</label>
-                                <input type="text" class="form-control" id="webhook" placeholder="Discord Webhook URL">
+                                <input type="text" class="form-control bg-light border-0" id="webhook" placeholder="Discord Webhook URL">
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-plus-lg"></i> Add Account
+                            <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                                <i class="bi bi-plus-lg me-1"></i> Add Account
                             </button>
                         </form>
                     </div>
@@ -144,36 +234,37 @@
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5><i class="bi bi-people"></i> Managed Accounts</h5>
-                        <span class="badge bg-light text-dark border">{{ users|length }} Total</span>
+                        <h5>Managed Accounts</h5>
+                        <span class="badge bg-light text-secondary border rounded-pill px-3">{{ users|length }} Active</span>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover">
+                                <thead>
                                     <tr>
-                                        <th>Alias</th>
+                                        <th class="ps-4">Alias</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Control</th>
-                                        <th class="text-end">Actions</th>
+                                        <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for user in users %}
                                     <tr>
-                                        <td class="fw-medium">
-                                            <i class="bi bi-person-circle text-muted me-2"></i>{{ user.alias }}
+                                        <td class="ps-4 fw-bold text-dark">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width:36px; height:36px;">
+                                                    <i class="bi bi-person-fill text-secondary"></i>
+                                                </div>
+                                                {{ user.alias }}
+                                            </div>
                                         </td>
                                         
                                         <td class="text-center">
                                             {% if user.is_active %}
-                                                <span class="badge bg-success bg-opacity-10 text-success border border-success status-badge">
-                                                    Running
-                                                </span>
+                                                <span class="status-badge status-active">Running</span>
                                             {% else %}
-                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger status-badge">
-                                                    Paused
-                                                </span>
+                                                <span class="status-badge status-paused">Paused</span>
                                             {% endif %}
                                         </td>
 
@@ -187,19 +278,20 @@
                                             </div>
                                         </td>
 
-                                        <td class="text-end">
-                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="viewSchedule({{ user.id }})" title="View Schedule">
-                                                <i class="bi bi-calendar-event"></i>
+                                        <td class="text-end pe-4">
+                                            <button class="btn btn-sm btn-light border me-1" onclick="viewSchedule({{ user.id }})" title="View Schedule">
+                                                <i class="bi bi-calendar3 text-primary"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }})" title="Delete Account">
+                                            <button class="btn btn-sm btn-light border text-danger" onclick="deleteUser({{ user.id }})" title="Delete Account">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
                                     {% else %}
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">
-                                            No accounts added yet. Add one to get started.
+                                        <td colspan="4" class="text-center text-muted py-5">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2 text-light"></i>
+                                            No accounts added yet.
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -213,14 +305,14 @@
     </div>
 
     <div class="modal fade" id="scheduleModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title"><i class="bi bi-calendar3"></i> Upcoming Schedule</h5>
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-calendar-week me-2"></i>Upcoming Classes</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div id="userInfo" class="mb-4 p-3 bg-primary bg-opacity-10 rounded border border-primary text-primary"></div>
+                <div class="modal-body p-4 bg-light">
+                    <div id="userInfo" class="mb-4"></div>
                     <div id="scheduleContent">Loading...</div>
                 </div>
             </div>
@@ -229,17 +321,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // --- Clock ---
+        // Clock
         setInterval(() => {
             const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleString();
+            document.getElementById('clock').innerText = now.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
         }, 1000);
 
-        // --- User Management ---
+        // Add User
         document.getElementById('addUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
-            const originalText = btn.innerHTML;
+            const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Adding...';
             btn.disabled = true;
 
@@ -261,12 +353,12 @@
                 } else {
                     const err = await res.json();
                     alert("Error: " + (err.detail || "Invalid Token"));
-                    btn.innerHTML = originalText;
+                    btn.innerHTML = originalHtml;
                     btn.disabled = false;
                 }
             } catch (error) {
                 alert("Network Error");
-                btn.innerHTML = originalText;
+                btn.innerHTML = originalHtml;
                 btn.disabled = false;
             }
         });
@@ -282,7 +374,7 @@
             try {
                 const res = await fetch(`/users/${id}/toggle`, { method: 'PATCH' });
                 if(res.ok) {
-                    location.reload(); // Reload to update badges visually
+                    location.reload();
                 } else {
                     alert("Failed to toggle status");
                 }
@@ -291,18 +383,18 @@
             }
         }
 
-        // --- Schedule & Check-in ---
         let currentUserId = null;
 
+        // View Schedule
         async function viewSchedule(id) {
             currentUserId = id;
             const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
             modal.show();
             
             document.getElementById('scheduleContent').innerHTML = `
-                <div class="text-center py-4">
+                <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <div class="mt-2 text-muted">Fetching live data from SEAtS...</div>
+                    <div class="mt-2 text-muted small fw-bold">SYNCING WITH SEAtS...</div>
                 </div>`;
             document.getElementById('userInfo').innerHTML = '';
 
@@ -310,41 +402,43 @@
                 const res = await fetch(`/schedule/${id}`);
                 const data = await res.json();
                 
-                // Show User Info
                 if (data.user) {
                     document.getElementById('userInfo').innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-person-badge fs-3 me-3"></i>
-                            <div>
-                                <div class="fw-bold">${data.user.name}</div>
-                                <div class="small opacity-75">${data.user.email} | ${data.user.studentId}</div>
+                        <div class="card shadow-sm border-0 mb-3">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width:48px; height:48px;">
+                                    <i class="bi bi-mortarboard-fill fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">${data.user.name}</h6>
+                                    <div class="text-muted small">${data.user.email} &bull; ${data.user.studentId}</div>
+                                </div>
                             </div>
                         </div>
                     `;
                 }
 
-                // Show Lessons
                 let html = '<div class="list-group list-group-flush">';
                 if (data.schedule && data.schedule.length > 0) {
                     data.schedule.forEach(l => {
                         html += `
-                        <div class="list-group-item lesson-item p-3 d-flex justify-content-between align-items-center shadow-sm rounded mb-2 border-0">
-                            <div>
-                                <div class="lesson-time"><i class="bi bi-clock"></i> ${l.startTime}</div>
-                                <div class="lesson-title">${l.title}</div>
-                                <div class="lesson-room"><i class="bi bi-geo-alt"></i> ${l.room}</div>
+                        <div class="lesson-item p-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
+                            <div class="mb-3 mb-sm-0 flex-grow-1 pe-4">
+                                <div class="lesson-time"><i class="bi bi-clock me-1"></i>${l.startTime}</div>
+                                <div class="lesson-title mb-1">${l.title}</div>
+                                <div class="text-muted small lesson-room"><i class="bi bi-geo-alt-fill me-1"></i>${l.room}</div>
                             </div>
-                            <button class="btn btn-outline-success btn-sm fw-bold" 
+                            <button class="btn btn-checkin" 
                                 onclick="manualCheckIn(${l.ids.timetableId}, ${l.ids.studentScheduleId}, '${l.title.replace(/'/g, "\\'")}')">
-                                <i class="bi bi-check-circle-fill"></i> Check In Now
+                                <i class="bi bi-check-lg"></i> Check In
                             </button>
                         </div>`;
                     });
                 } else {
                     html += `
                     <div class="text-center py-5 text-muted">
-                        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-                        No upcoming classes found for the next 7 days.
+                        <i class="bi bi-calendar-x fs-1 d-block mb-3 opacity-25"></i>
+                        <p class="mb-0">No upcoming classes found for the next 7 days.</p>
                     </div>`;
                 }
                 html += '</div>';
@@ -352,19 +446,19 @@
 
             } catch (err) {
                 document.getElementById('scheduleContent').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> Error loading schedule: ${err}
+                    <div class="alert alert-danger shadow-sm border-0">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i> Error loading schedule: ${err}
                     </div>`;
             }
         }
 
         async function manualCheckIn(timetableId, studentScheduleId, title) {
-            if(!confirm(`Force check-in for "${title}"?\nThis will send a request immediately.`)) return;
+            if(!confirm(`Force check-in for "${title}"?`)) return;
 
             const btn = event.target.closest('button');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
             try {
                 const res = await fetch(`/checkin/${currentUserId}`, {
@@ -379,22 +473,21 @@
                 const result = await res.json();
                 
                 if (result.success) {
-                    btn.className = "btn btn-success btn-sm fw-bold";
-                    btn.innerHTML = '<i class="bi bi-check-lg"></i> Done!';
-                    alert(`Success! Check-in Code: ${result.checkinCode || 'N/A'}`);
+                    btn.className = "btn btn-success btn-sm fw-bold px-4 btn-checkin";
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Success';
+                    alert(`Checked In Successfully!\nCode: ${result.checkinCode || 'Auto'}`);
                 } else {
-                    btn.className = "btn btn-danger btn-sm fw-bold";
-                    btn.innerHTML = '<i class="bi bi-x-circle"></i> Failed';
-                    alert(`Failed: ${result.error || 'Unknown error'}`);
-                    // Reset
+                    btn.className = "btn btn-danger btn-sm fw-bold px-4 btn-checkin";
+                    btn.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i>Failed';
+                    alert(`Check-in Failed: ${result.error || 'Unknown error'}`);
                     setTimeout(() => {
-                        btn.className = "btn btn-outline-success btn-sm fw-bold";
+                        btn.className = "btn btn-checkin";
                         btn.innerHTML = originalHtml;
                         btn.disabled = false;
                     }, 3000);
                 }
             } catch (e) {
-                alert("Network error occurred.");
+                alert("Network error.");
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
             }
