@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SEAtS Mobile</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --seats-navy: #1a365d;
+            --seats-orange: #1E73BE;
+            --seats-teal: #0d9488;
+            --seats-bg: #f3f4f6;
+            --text-main: #1f2937;
+            --card-surface: #ffffff;
+        }
+
+        body {
+            background-color: var(--seats-bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            padding-bottom: 80px; /* Space for FAB */
+        }
+
+        /* Mobile Navbar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand-text {
+            font-weight: 800;
+            color: var(--seats-navy);
+            letter-spacing: -0.5px;
+            font-size: 1.25rem;
+        }
+
+        /* Mobile Cards */
+        .user-card {
+            background: var(--card-surface);
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 1rem;
+            transition: transform 0.1s;
+        }
+        .user-card:active {
+            transform: scale(0.98);
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #f0f9ff;
+            color: var(--seats-orange);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        /* Toggle Switch - Larger for Touch */
+        .form-switch .form-check-input {
+            width: 3.2em;
+            height: 1.8em;
+            cursor: pointer;
+        }
+        .form-check-input:checked {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+
+        /* Floating Action Button */
+        .fab-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 32px;
+            background: var(--seats-orange);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(30, 115, 190, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            z-index: 1050;
+            transition: all 0.2s;
+        }
+        .fab-btn:active {
+            transform: scale(0.9) rotate(90deg);
+            background: #155ba0;
+        }
+
+        /* Lesson Items */
+        .lesson-item {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .lesson-left {
+            border-left: 5px solid var(--seats-navy);
+            padding: 16px;
+        }
+        
+        /* Modal tweaks */
+        .modal-bottom .modal-dialog {
+            margin: 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 100%;
+        }
+        .modal-bottom .modal-content {
+            border-radius: 20px 20px 0 0;
+            border: none;
+        }
+        
+        .btn-checkin {
+            width: 100%;
+            border-radius: 8px;
+            padding: 10px;
+            font-weight: 600;
+            background: #f0fdfa;
+            color: var(--seats-teal);
+            border: 1px solid var(--seats-teal);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="brand-text">
+                FUCK <span style="color: var(--seats-orange)">SEAtS</span>
+            </div>
+            <div class="d-flex align-items-center bg-light px-3 py-1 rounded-pill border">
+                <i class="bi bi-clock-fill me-2 text-muted small"></i>
+                <span id="clock" class="small fw-bold text-dark">--:--</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        
+        <div class="d-flex justify-content-between align-items-end mb-3 px-1">
+            <h6 class="text-muted text-uppercase fw-bold m-0 small tracking-wide">Your Accounts</h6>
+            <span class="badge bg-white text-dark border shadow-sm rounded-pill">{{ users|length }} Active</span>
+        </div>
+
+        <div id="userList">
+            {% for user in users %}
+            <div class="card user-card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">{{ user.alias }}</h6>
+                            <div class="small text-muted">
+                                {% if user.is_active %}
+                                <span class="text-success"><i class="bi bi-circle-fill" style="font-size: 6px; vertical-align: middle;"></i> Running</span>
+                                {% else %}
+                                <span class="text-warning"><i class="bi bi-circle-fill" style="font-size: 6px; vertical-align: middle;"></i> Paused</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox" role="switch" 
+                               onchange="toggleUser({{ user.id }})" 
+                               {% if user.is_active %}checked{% endif %}>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light flex-grow-1 border fw-medium text-dark" onclick="viewSchedule({{ user.id }})">
+                        <i class="bi bi-calendar-event me-2 text-primary"></i>Schedule
+                    </button>
+                    <button class="btn btn-light border text-danger" onclick="deleteUser({{ user.id }})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <div class="mb-3">
+                    <i class="bi bi-phone-vibrate fs-1 opacity-25"></i>
+                </div>
+                <p>No accounts yet.<br>Tap + to get started.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <button class="fab-btn" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+
+    <div class="modal fade modal-bottom" id="addAccountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Add Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-secondary">ALIAS</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" id="alias" placeholder="e.g. My Phone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-secondary">TOKEN</label>
+                            <textarea class="form-control form-control-lg bg-light border-0" id="token" rows="3" placeholder="Bearer ..." required></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-secondary">WEBHOOK (OPTIONAL)</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" id="webhook" placeholder="https://discord...">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg rounded-3 fw-bold shadow-sm" style="background: var(--seats-orange); border:none;">
+                            Add Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content bg-light">
+                <div class="modal-header border-0 bg-white shadow-sm">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar-week me-2"></i>Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div id="userInfo" class="mb-3"></div>
+                    <div id="scheduleContent">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- Core Logic (Same as Desktop, optimized interactions) ---
+
+        // Clock
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }, 1000);
+
+        // Add User
+        document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+            btn.disabled = true;
+
+            const data = {
+                alias: document.getElementById('alias').value,
+                token: document.getElementById('token').value,
+                webhook_url: document.getElementById('webhook').value
+            };
+            
+            try {
+                const res = await fetch('/users/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.detail || "Invalid Token"));
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("Network Error");
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
+
+        async function deleteUser(id) {
+            if(confirm("Remove this account?")) {
+                await fetch(`/users/${id}`, { method: 'DELETE' });
+                location.reload();
+            }
+        }
+
+        async function toggleUser(id) {
+            try {
+                const res = await fetch(`/users/${id}/toggle`, { method: 'PATCH' });
+                if(res.ok) {
+                    location.reload();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        let currentUserId = null;
+
+        async function viewSchedule(id) {
+            currentUserId = id;
+            const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+            modal.show();
+            
+            document.getElementById('scheduleContent').innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-3 text-muted fw-bold small">Fetching SEAtS Data...</div>
+                </div>`;
+            document.getElementById('userInfo').innerHTML = '';
+
+            try {
+                const res = await fetch(`/schedule/${id}`);
+                const data = await res.json();
+                
+                // Render User Header
+                if (data.user) {
+                    document.getElementById('userInfo').innerHTML = `
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body p-3 d-flex align-items-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 me-3">
+                                    <i class="bi bi-person-badge fs-3"></i>
+                                </div>
+                                <div style="overflow:hidden;">
+                                    <h5 class="mb-0 fw-bold text-truncate">${data.user.name}</h5>
+                                    <div class="text-muted small text-truncate">${data.user.email}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Render Lessons
+                let html = '';
+                if (data.schedule && data.schedule.length > 0) {
+                    data.schedule.forEach(l => {
+                        html += `
+                        <div class="lesson-item">
+                            <div class="lesson-left">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${l.startTime.split(' ')[1].slice(0,5)}</span>
+                                    <span class="text-muted small">${l.startTime.split(' ')[0]}</span>
+                                </div>
+                                <h6 class="fw-bold mb-1" style="color: var(--seats-navy)">${l.title}</h6>
+                                <div class="text-muted small mb-3"><i class="bi bi-geo-alt-fill me-1"></i>${l.room}</div>
+                                
+                                <button class="btn btn-checkin" 
+                                    onclick="manualCheckIn(${l.ids.timetableId}, ${l.ids.studentScheduleId}, '${l.title.replace(/'/g, "\\'")}')">
+                                    Tap to Check In
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                } else {
+                    html = `
+                    <div class="text-center py-5 text-muted opacity-50">
+                        <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+                        <p>No classes found.</p>
+                    </div>`;
+                }
+                document.getElementById('scheduleContent').innerHTML = html;
+
+            } catch (err) {
+                document.getElementById('scheduleContent').innerHTML = `<div class="alert alert-danger">Error: ${err}</div>`;
+            }
+        }
+
+        async function manualCheckIn(timetableId, studentScheduleId, title) {
+            if(!confirm(`Check into "${title}" now?`)) return;
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            const originalClass = btn.className;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+            btn.className = "btn btn-light w-100 border text-muted";
+
+            try {
+                const res = await fetch(`/checkin/${currentUserId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        timetable_id: timetableId,
+                        student_schedule_id: studentScheduleId
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    btn.className = "btn w-100 btn-success fw-bold";
+                    btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Checked In';
+                } else {
+                    btn.className = "btn w-100 btn-danger fw-bold";
+                    btn.innerHTML = 'Failed';
+                    alert(`Failed: ${result.error}`);
+                    setTimeout(() => {
+                        btn.className = originalClass;
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }, 2000);
+                }
+            } catch (e) {
+                alert("Network error.");
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.className = originalClass;
+            }
+        }
+    </script>
+</body>
+</html>

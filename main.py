@@ -100,10 +100,22 @@ def shutdown_scheduler():
 
 # --- API Routes ---
 
+# In main.py
+
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
     users = db.query(models.User).all()
-    return templates.TemplateResponse("index.html", {"request": request, "users": users})
+    
+    # Get the User-Agent string from the request headers
+    user_agent = request.headers.get("User-Agent", "").lower()
+    
+    # Simple check for common mobile keywords
+    is_mobile = "mobile" in user_agent or "android" in user_agent or "iphone" in user_agent
+    
+    # Choose the appropriate template
+    template_name = "mobile.html" if is_mobile else "index.html"
+    
+    return templates.TemplateResponse(template_name, {"request": request, "users": users})
 
 @app.post("/users/", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
