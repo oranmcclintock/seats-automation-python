@@ -444,18 +444,19 @@ def main():
         elif c == "7":
             sys.exit(0)
 
-
+# --- This executes first, determines run mode ---
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description="SEAtS Automation CLI.")
-
     parser.add_argument('run_mode', nargs='?', default=None, help='Set to "scheduler" to run scheduler directly.')
     args = parser.parse_args()
 
     try:
-        if args.run_mode == '-auto' or args.run_mode == 'scheduler':
+        if args.run_mode == 'scheduler':
+            # 1. Run in headless mode
+            print("Starting SEAtS Scheduler in Headless Mode...")
             startScheduler()
         else:
+            # 2. Run in interactive CLI mode
             main()
     except KeyboardInterrupt:
         sys.exit(0)
