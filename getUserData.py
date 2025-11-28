@@ -3,7 +3,7 @@ import json
 import base64
 import time
 from datetime import datetime
-from datetime import timedelta, timezone  # Keep imports clean
+from datetime import timedelta, timezone 
 
 TENANT_ID = "126"
 API_HOST = "01v2mobileapi.seats.cloud"
@@ -50,7 +50,6 @@ def fetchProfile(token: str):
 
 
 def fetchTimetable(token: str):
-    # WORKING LOGIC: Uses simple time.time() and 7-day lookahead
     startDate = int(time.time())
     endDate = startDate + (7 * 24 * 60 * 60)
 
@@ -60,7 +59,6 @@ def fetchTimetable(token: str):
     try:
         response = requests.get(url, headers=getHeaders(token), params=params)
         if response.status_code == 200:
-            # FIX: Simple return, assumes a list of lessons is the top-level response
             return response.json()
         else:
             print(f"ERROR: fetchTimetable failed with status {response.status_code}")

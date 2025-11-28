@@ -14,7 +14,6 @@ class UserResponse(UserCreate):
     class Config:
         from_attributes = True
 
-# NEW: Request body for manual check-in
 class CheckInRequest(BaseModel):
     timetable_id: int
     student_schedule_id: int

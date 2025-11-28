@@ -9,10 +9,6 @@ from encryption import Encryption
 TENANT_ID = "126"
 API_HOST = "01v2mobileapi.seats.cloud"
 
-
-# DISCORD_WEBHOOK_URL is no longer defined here; it is passed from main.py
-
-
 def getHeaders(token):
     cleanToken = token.strip()
     if not cleanToken.startswith("Bearer "):
@@ -36,7 +32,6 @@ def log_response(user_id, endpoint, response_text):
         f.write(response_text)
 
 
-# UPDATED to accept webhook_url directly
 def send_discord_webhook(success, lesson_title, user_id, error_msg=None, checkin_code=None, webhook_url=None):
     if not webhook_url or "YOUR_DISCORD_WEBHOOK" in webhook_url:
         return
@@ -61,22 +56,20 @@ def send_discord_webhook(success, lesson_title, user_id, error_msg=None, checkin
         print(f"Discord Error: {e}")
 
 
-# FIX: Updated definition to accept 5 arguments: token, lesson, user_id, mobile_phone_val, webhook_url
 def performCheckIn(token, lesson, user_id="Unknown", mobile_phone_val=None, webhook_url=None):
-    # 1. Get the signing key (passed directly now)
     if not mobile_phone_val:
         error_msg = "Missing 'mobile_phone_setting'. Token configuration may be incomplete."
         print(f"Error: {error_msg}")
         return {"success": False, "code": 0, "error": error_msg}
 
-    # 2. Prepare Payload
+    # Prepare Payload
     timestamp = datetime.now().isoformat().split('.')[0]
     timetable_id = str(lesson["ids"]["timetableId"])
     student_schedule_id = str(lesson["ids"]["studentScheduleId"])
     check_in_reason = "Ibeacon"
     check_in_input = None
 
-    # FIX: Randomly select beacon UUID (The previous version only took index 0)
+    # Randomly select beacon UUID (The previous version only took index 0)
     beacon_data = lesson["auth"].get("beaconData")
     if not beacon_data or not isinstance(beacon_data, list) or len(beacon_data) == 0:
         error_msg = "No iBeacon data available for this lesson."
@@ -91,7 +84,6 @@ def performCheckIn(token, lesson, user_id="Unknown", mobile_phone_val=None, webh
         return {"success": False, "code": 0, "error": error_msg}
 
     # 3. Calculate Fingerprint (uses Encryption.py)
-    # Ensure empty CheckInInput is included for hash integrity
     fp_input = f"{timestamp}{timetable_id}{student_schedule_id}{check_in_reason}{check_in_input or ''}"
     fingerprint = Encryption.compute_fingerprint(fp_input, mobile_phone_val)
 

@@ -13,12 +13,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from database import engine, Base, get_db
 import models
 import schemas
-
-# Import your existing logic files
 from getUserData import fetchUserData, fetchMobilePhoneSetting
 from checkIn import performCheckIn
 
-# --- Setup ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SeatsApp")
 
@@ -30,8 +27,6 @@ templates = Jinja2Templates(directory="templates")
 
 scheduler = BackgroundScheduler()
 scheduled_lessons_cache = set()
-
-# --- Scheduler Logic ---
 
 def automated_check_in_task(token: str, lesson: dict, user_id: str, mobile_key: str, webhook_url: str):
     logger.info(f"Executing Check-in for {user_id} - {lesson.get('title')}")
@@ -106,7 +101,6 @@ def shutdown_scheduler():
 def read_root(request: Request, db: Session = Depends(get_db)):
     users = db.query(models.User).all()
     
-    # Get the User-Agent string from the request headers
     user_agent = request.headers.get("User-Agent", "").lower()
     
     # Simple check for common mobile keywords
@@ -144,7 +138,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"ok": True}
 
-# NEW: Toggle Active Status
 @app.patch("/users/{user_id}/toggle")
 def toggle_user_active(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -164,7 +157,6 @@ def get_user_schedule(user_id: int, db: Session = Depends(get_db)):
     data = fetchUserData(user.token)
     return data
 
-# NEW: Manual Check-In
 @app.post("/checkin/{user_id}")
 def manual_checkin(user_id: int, req: schemas.CheckInRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
