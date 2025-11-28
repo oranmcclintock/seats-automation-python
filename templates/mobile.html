@@ -67,7 +67,7 @@
             font-size: 1.2rem;
         }
 
-        /* Toggle Switch - Larger for Touch */
+        /* Toggle Switch */
         .form-switch .form-check-input {
             width: 3.2em;
             height: 1.8em;
@@ -137,6 +137,10 @@
             background: #f0fdfa;
             color: var(--seats-teal);
             border: 1px solid var(--seats-teal);
+            transition: background-color 0.2s;
+        }
+        .btn-checkin:active {
+            background-color: #ccfbf1;
         }
     </style>
 </head>
@@ -258,8 +262,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // --- Core Logic (Same as Desktop, optimized interactions) ---
-
         // Clock
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -341,72 +343,6 @@
                         <div class="card border-0 shadow-sm mb-3">
                             <div class="card-body p-3 d-flex align-items-center">
                                 <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 50px; height: 50px;">
-                                    <i class="bi bi-person-badge fs-3"></i>
-                                </div>
-                                <div style="overflow:hidden;">
-                                    <h5 class="mb-0 fw-bold text-truncate">${data.user.name}</h5>
-                                    <div class="text-muted small text-truncate">${data.user.email}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Render Lessons
-                let html = '';
-                if (data.schedule && data.schedule.length > 0) {
-                    data.schedule.forEach(l => {
-                        html += `
-                        <div class="lesson-item">
-                            <div class="lesson-left">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="badge bg-light text-dark border"><i class="bi bi-clock me-1"></i>${l.startTime.split(' ')[1].slice(0,5)}</span>
-                                    <span class="text-muted small">${l.startTime.split(' ')[0]}</span>
-                                </div>
-                                <h6 class="fw-bold mb-1" style="color: var(--seats-navy)">${l.title}</h6>
-                                <div class="text-muted small mb-3"><i class="bi bi-geo-alt-fill me-1"></i>${l.room}</div>
-                                
-                                <button class="btn btn-checkin" 
-                                    onclick="manualCheckIn(${l.ids.timetableId}, ${l.ids.studentScheduleId}, '${l.title.replace(/'/g, "\\'")}')">
-                                    Tap to Check In
-                                </button>
-                            </div>
-                        </div>`;
-                    });
-                } else {
-                    html = `
-                    <div class="text-center py-5 text-muted opacity-50">
-                        <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
-                        <p>No classes found.</p>
-                    </div>`;
-                }
-                document.getElementById('scheduleContent').innerHTML = html;
-
-            } catch (err) {
-                document.getElementById('scheduleContent').innerHTML = `<div class="alert alert-danger">Error: ${err}</div>`;
-            }
-        }
-            currentUserId = id;
-            const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
-            modal.show();
-            
-            document.getElementById('scheduleContent').innerHTML = `
-                <div class="d-flex flex-column align-items-center justify-content-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <div class="mt-3 text-muted fw-bold small">Fetching SEAtS Data...</div>
-                </div>`;
-            document.getElementById('userInfo').innerHTML = '';
-
-            try {
-                const res = await fetch(`/schedule/${id}`);
-                const data = await res.json();
-                
-                // Render User Header
-                if (data.user) {
-                    document.getElementById('userInfo').innerHTML = `
-                        <div class="card border-0 shadow-sm mb-3">
-                            <div class="card-body p-3 d-flex align-items-center">
-                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 me-3">
                                     <i class="bi bi-person-badge fs-3"></i>
                                 </div>
                                 <div style="overflow:hidden;">
