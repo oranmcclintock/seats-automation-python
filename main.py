@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import random
+import argparse
 from datetime import datetime, timedelta
 from getUserData import fetchUserData, fetchMobilePhoneSetting  # Now fetches the key
 from checkIn import performCheckIn  # Must be updated to accept key and webhook URL
@@ -412,7 +413,6 @@ def startScheduler():
 
 def main():
     while True:
-
         config = loadConfig()
         tokenCount = len(config.get("tokens", {}))
         activeStatus = config.get("active", "None")
@@ -446,8 +446,16 @@ def main():
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="SEAtS Automation CLI.")
+
+    parser.add_argument('run_mode', nargs='?', default=None, help='Set to "scheduler" to run scheduler directly.')
+    args = parser.parse_args()
+
     try:
-        main()
+        if args.run_mode == '-auto' or args.run_mode == 'scheduler':
+            startScheduler()
+        else:
+            main()
     except KeyboardInterrupt:
         sys.exit(0)
-
