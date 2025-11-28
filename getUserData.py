@@ -3,6 +3,7 @@ import json
 import base64
 import time
 from datetime import datetime
+from datetime import timedelta, timezone  # Keep imports clean
 
 TENANT_ID = "126"
 API_HOST = "01v2mobileapi.seats.cloud"
@@ -42,20 +43,14 @@ def fetchProfile(token: str):
     try:
         response = requests.get(url, headers=getHeaders(token))
         if response.status_code == 200:
-            try:
-                # Attempt JSON decode
-                return response.json()
-            except json.JSONDecodeError:
-                print("ERROR: API returned 200 OK, but response body was not valid JSON.")
-                print(f"Response start: {response.text[:50]}...")
-        # ... (rest of the error handling remains the same)
-    except Exception as e:
-        print(f"Error fetching profile: {e}")
+            return response.json()
+    except Exception:
         pass
     return None
 
 
 def fetchTimetable(token: str):
+    # WORKING LOGIC: Uses simple time.time() and 7-day lookahead
     startDate = int(time.time())
     endDate = startDate + (7 * 24 * 60 * 60)
 
@@ -65,8 +60,12 @@ def fetchTimetable(token: str):
     try:
         response = requests.get(url, headers=getHeaders(token), params=params)
         if response.status_code == 200:
+            # FIX: Simple return, assumes a list of lessons is the top-level response
             return response.json()
-    except Exception:
+        else:
+            print(f"ERROR: fetchTimetable failed with status {response.status_code}")
+    except Exception as e:
+        print(f"ERROR: fetchTimetable failed due to network/request issue: {e}")
         pass
     return []
 
@@ -76,36 +75,57 @@ def fetchUserData(token: str):
     profileData = fetchProfile(token)
     timetableData = fetchTimetable(token)
 
-    userName = "Unknown"
-    userEmail = "Unknown"
-    studentId = tokenData.get("studentId")  # Extract studentId directly and safely
+    userName = tokenData.get("name") if isinstance(tokenData.get("name"), str) else "Unknown"
+    userEmail = "N/A"  # Default to N/A
 
-    # New logic to safely extract name, supporting different JWT structures
+    # Robust Name/Email Extraction
     name_field = tokenData.get("name")
-
-    if isinstance(name_field, str):
-        # Case 1: Name is a simple string
-        userName = name_field
-    elif isinstance(name_field, list) and len(name_field) >= 2:
-        # Case 2: Name is a list (e.g., ["Name", "Email"])
+    if isinstance(name_field, list) and len(name_field) >= 2:
         userName = name_field[0]
         userEmail = name_field[1]
 
-    # --- The rest of the function continues here ---
+    # If profileData exists, try to get email from there
+    if profileData and profileData.get('email'):
+        userEmail = profileData.get('email')
 
     def fmt_ts(ts):
-        # ... (remains the same)
-        pass
+        try:
+            # Ensure safe conversion even without explicit timezone import (relying on system)
+            return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return "Unknown"
 
     cleanTimetable = []
-    # ... (remains the same)
+    # Loop safely over timetableData, which should be a list
+    for lesson in timetableData or []:
+        beaconData = lesson.get("iBeaconData", [])
+
+        # Store full iBeaconData list for random selection later in checkIn.py
+        beacon_data_list = []
+        if beaconData and isinstance(beaconData, list):
+            beacon_data_list = beaconData
+
+        start_ts = lesson.get("start")
+        cleanTimetable.append(
+            {
+                "title": lesson.get("title"),
+                "room": lesson.get("roomName"),
+                "startTime": fmt_ts(start_ts),
+                "ids": {
+                    "timetableId": lesson.get("timeTableId"),
+                    "studentScheduleId": lesson.get("studentScheduleId"),
+                },
+                # Store the full list for random selection in performCheckIn
+                "auth": {"beaconData": beacon_data_list},
+            }
+        )
 
     exp_ts = tokenData.get("exp")
     finalData = {
         "user": {
             "name": userName,
             "email": userEmail,
-            "studentId": studentId,  # Use the safely extracted studentId
+            "studentId": tokenData.get("studentId"),
             "tenantId": tokenData.get("TenantId"),
             "tokenExpiration": fmt_ts(exp_ts),
         },
@@ -115,11 +135,10 @@ def fetchUserData(token: str):
 
     return finalData
 
-def fetchMobilePhoneSetting(token: str):
 
+def fetchMobilePhoneSetting(token: str):
     url = f"https://{API_HOST}/api/v1/app/settingsextended"
     try:
-
         response = requests.get(url, headers=getHeaders(token))
         if response.status_code == 200:
             data = response.json()
@@ -129,6 +148,7 @@ def fetchMobilePhoneSetting(token: str):
     except Exception as e:
         print(f"Error fetching mobile setting: {e}")
     return None
+
 
 if __name__ == "__main__":
     print("This module is intended to be used by the CLI. Provide a token to fetchUserData(token).")
