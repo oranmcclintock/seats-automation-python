@@ -123,23 +123,37 @@ def deleteToken():
     except:
         pass
 
+
 def viewData():
     config = loadConfig()
-    token = config.get("tokens", {}).get(config.get("active"))
-    if not token: return
+    active_alias = config.get("active")
+    token_data = config.get("tokens", {}).get(active_alias)
+
+    if not token_data:
+        print("ERROR: No active token selected.")
+        return
+
+    # Explicitly extract the token string
+    token = token_data.get("token")
+
+    if not token:
+        print(f"ERROR: No token found for active user '{active_alias}'.")
+        return
 
     data = fetchUserData(token)
+
     if not data or "user" not in data:
-        print("Failed to fetch data.")
+        print("Failed to fetch data. Check the Bearer Token or API status.")
         return
 
     u = data["user"]
-    print(f"\nUser: {u['name']} ({u['studentId']})")
+
+    print(f"\nUser: {u.get('name')} ({u.get('studentId')})")
+    print(f"Email: {u.get('email', 'N/A')}")
     print("-" * 30)
     for l in data["schedule"]:
         print(f"{l['startTime']} - {l['title']}")
     print("")
-
 
 def checkInMenu():
     config = loadConfig()

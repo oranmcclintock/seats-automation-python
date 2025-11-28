@@ -7,3 +7,5 @@ request-logs/
 __pycache__/
 venv/
 *.pyc
+.gitignore
+

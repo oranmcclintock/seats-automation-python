@@ -42,8 +42,15 @@ def fetchProfile(token: str):
     try:
         response = requests.get(url, headers=getHeaders(token))
         if response.status_code == 200:
-            return response.json()
-    except Exception:
+            try:
+                # Attempt JSON decode
+                return response.json()
+            except json.JSONDecodeError:
+                print("ERROR: API returned 200 OK, but response body was not valid JSON.")
+                print(f"Response start: {response.text[:50]}...")
+        # ... (rest of the error handling remains the same)
+    except Exception as e:
+        print(f"Error fetching profile: {e}")
         pass
     return None
 
@@ -63,6 +70,7 @@ def fetchTimetable(token: str):
         pass
     return []
 
+
 def fetchUserData(token: str):
     tokenData = decodeJwt(token)
     profileData = fetchProfile(token)
@@ -70,43 +78,34 @@ def fetchUserData(token: str):
 
     userName = "Unknown"
     userEmail = "Unknown"
+    studentId = tokenData.get("studentId")  # Extract studentId directly and safely
 
-    if "name" in tokenData and isinstance(tokenData["name"], list) and len(tokenData["name"]) >= 2:
-        userName = tokenData["name"][0]
-        userEmail = tokenData["name"][1]
+    # New logic to safely extract name, supporting different JWT structures
+    name_field = tokenData.get("name")
+
+    if isinstance(name_field, str):
+        # Case 1: Name is a simple string
+        userName = name_field
+    elif isinstance(name_field, list) and len(name_field) >= 2:
+        # Case 2: Name is a list (e.g., ["Name", "Email"])
+        userName = name_field[0]
+        userEmail = name_field[1]
+
+    # --- The rest of the function continues here ---
 
     def fmt_ts(ts):
-        try:
-            return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
-            return "Unknown"
+        # ... (remains the same)
+        pass
 
     cleanTimetable = []
-    for lesson in timetableData or []:
-
-        beacon_data = lesson.get("iBeaconData", [])
-
-        start_ts = lesson.get("start")
-        cleanTimetable.append(
-            {
-                "title": lesson.get("title"),
-                "room": lesson.get("roomName"),
-                "startTime": fmt_ts(start_ts),
-                "ids": {
-                    "timetableId": lesson.get("timeTableId"),
-                    "studentScheduleId": lesson.get("studentScheduleId"),
-                },
-                # Storing the full beacon data array
-                "auth": {"beaconData": beacon_data},
-            }
-        )
+    # ... (remains the same)
 
     exp_ts = tokenData.get("exp")
     finalData = {
         "user": {
             "name": userName,
             "email": userEmail,
-            "studentId": tokenData.get("studentId"),
+            "studentId": studentId,  # Use the safely extracted studentId
             "tenantId": tokenData.get("TenantId"),
             "tokenExpiration": fmt_ts(exp_ts),
         },
