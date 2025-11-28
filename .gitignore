@@ -1,0 +1,8 @@
+# Configuration and secrets
+config.json
+# Logs
+request-logs/
+# Python dependencies
+__pycache__/
+venv/
+*.pyc

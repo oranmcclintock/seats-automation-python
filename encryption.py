@@ -5,7 +5,7 @@ from cryptography.hazmat.backends import default_backend
 
 
 class Encryption:
-    # Constants ported directly from the Node.js app
+
     CONSTANT_KEY = bytes([13, 146, 236, 36, 206, 221, 229, 5])
     KEY = bytes([241, 55, 32, 79, 252, 55, 172, 77, 98, 94, 137, 19, 247, 113, 197, 166])
     IV = bytes([0, 92, 145, 239, 90, 227, 23, 59, 55, 190, 85, 212, 234, 73, 12, 146])
