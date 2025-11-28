@@ -444,7 +444,6 @@ def main():
         elif c == "7":
             sys.exit(0)
 
-# --- This executes first, determines run mode ---
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SEAtS Automation CLI.")
     parser.add_argument('run_mode', nargs='?', default=None, help='Set to "scheduler" to run scheduler directly.')
