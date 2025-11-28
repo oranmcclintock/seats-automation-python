@@ -1,8 +1,9 @@
-# Configuration and secrets
+# Configuration and secrets (CRITICAL: Contains tokens and keys)
+config.bak
 config.json
-# Logs
+# Logs and other generated data
 request-logs/
-# Python dependencies
+# Python environment and compiled files
 __pycache__/
 venv/
 *.pyc
