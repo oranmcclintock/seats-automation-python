@@ -5,132 +5,399 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEAtS Automation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; padding-top: 20px; }
-        .card { margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        :root {
+            --primary-bg: #f3f4f6;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        body { 
+            background-color: var(--primary-bg); 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .navbar {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #4f46e5 !important;
+        }
+        .card { 
+            border: none; 
+            border-radius: 12px; 
+            box-shadow: var(--card-shadow); 
+            background: #fff;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 1.5rem;
+        }
+        .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            border-color: #4338ca;
+        }
+        .table > :not(caption) > * > * {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 0.35em 0.65em;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .lesson-item {
+            border-left: 4px solid #4f46e5;
+            margin-bottom: 10px;
+            background: #fff;
+        }
+        .lesson-time {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #374151;
+        }
+        .lesson-title {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .lesson-room {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+        
+        /* Custom Toggle Switch styling */
+        .form-switch .form-check-input {
+            width: 3em;
+            height: 1.5em;
+            cursor: pointer;
+        }
+        .form-switch .form-check-input:checked {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        .form-switch .form-check-input:not(:checked) {
+            background-color: #ef4444; /* Red/Orange for Paused */
+            border-color: #ef4444;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+        }
     </style>
 </head>
 <body>
+    
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-robot"></i> SEAtS Auto
+            </a>
+            <div class="ms-auto text-muted small">
+                <span id="clock">Loading time...</span>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
-        <h1 class="mb-4">SEAtS Automation Dashboard</h1>
-
-        <div class="card p-4">
-            <h4>Add New User</h4>
-            <form id="addUserForm">
-                <div class="mb-3">
-                    <label class="form-label">Alias (Name)</label>
-                    <input type="text" class="form-control" id="alias" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Bearer Token</label>
-                    <input type="text" class="form-control" id="token" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Discord Webhook (Optional)</label>
-                    <input type="text" class="form-control" id="webhook">
-                </div>
-                <button type="submit" class="btn btn-primary">Add User</button>
-            </form>
-        </div>
-
-        <div class="card p-4">
-            <h4>Active Users</h4>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Alias</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>{{ user.alias }}</td>
-                        <td>
-                            {% if user.is_active %}
-                            <span class="badge bg-success">Active</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-info" onclick="viewSchedule({{ user.id }})">View Schedule</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }})">Delete</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="modal fade" id="scheduleModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Schedule</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="row g-4">
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5><i class="bi bi-person-plus"></i> Add Account</h5>
                     </div>
-                    <div class="modal-body" id="scheduleContent">
-                        Loading...
+                    <div class="card-body">
+                        <form id="addUserForm">
+                            <div class="mb-3">
+                                <label class="form-label small text-muted text-uppercase fw-bold">Alias</label>
+                                <input type="text" class="form-control" id="alias" placeholder="e.g. My Personal Account" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted text-uppercase fw-bold">Bearer Token</label>
+                                <textarea class="form-control" id="token" rows="3" placeholder="Paste full token here..." required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted text-uppercase fw-bold">Webhook (Optional)</label>
+                                <input type="text" class="form-control" id="webhook" placeholder="Discord Webhook URL">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-lg"></i> Add Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="bi bi-people"></i> Managed Accounts</h5>
+                        <span class="badge bg-light text-dark border">{{ users|length }} Total</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Alias</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Control</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td class="fw-medium">
+                                            <i class="bi bi-person-circle text-muted me-2"></i>{{ user.alias }}
+                                        </td>
+                                        
+                                        <td class="text-center">
+                                            {% if user.is_active %}
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success status-badge">
+                                                    Running
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger status-badge">
+                                                    Paused
+                                                </span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="form-check form-switch d-flex justify-content-center">
+                                                <input class="form-check-input" type="checkbox" role="switch" 
+                                                       id="toggle-{{ user.id }}" 
+                                                       {% if user.is_active %}checked{% endif %}
+                                                       onchange="toggleUser({{ user.id }})"
+                                                       title="Toggle to Pause/Resume">
+                                            </div>
+                                        </td>
+
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="viewSchedule({{ user.id }})" title="View Schedule">
+                                                <i class="bi bi-calendar-event"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }})" title="Delete Account">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            No accounts added yet. Add one to get started.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title"><i class="bi bi-calendar3"></i> Upcoming Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="userInfo" class="mb-4 p-3 bg-primary bg-opacity-10 rounded border border-primary text-primary"></div>
+                    <div id="scheduleContent">Loading...</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // --- Clock ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleString();
+        }, 1000);
+
+        // --- User Management ---
         document.getElementById('addUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Adding...';
+            btn.disabled = true;
+
             const data = {
                 alias: document.getElementById('alias').value,
                 token: document.getElementById('token').value,
                 webhook_url: document.getElementById('webhook').value
             };
             
-            const res = await fetch('/users/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
+            try {
+                const res = await fetch('/users/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
 
-            if (res.ok) {
-                location.reload();
-            } else {
-                alert("Error adding user. Check if token is valid.");
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.detail || "Invalid Token"));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("Network Error");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         });
 
         async function deleteUser(id) {
-            if(confirm("Are you sure?")) {
+            if(confirm("Are you sure you want to remove this account?")) {
                 await fetch(`/users/${id}`, { method: 'DELETE' });
                 location.reload();
             }
         }
 
+        async function toggleUser(id) {
+            try {
+                const res = await fetch(`/users/${id}/toggle`, { method: 'PATCH' });
+                if(res.ok) {
+                    location.reload(); // Reload to update badges visually
+                } else {
+                    alert("Failed to toggle status");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // --- Schedule & Check-in ---
+        let currentUserId = null;
+
         async function viewSchedule(id) {
+            currentUserId = id;
             const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
             modal.show();
-            document.getElementById('scheduleContent').innerHTML = 'Fetching...';
-
-            const res = await fetch(`/schedule/${id}`);
-            const data = await res.json();
             
-            let html = '<ul class="list-group">';
-            if (data.schedule && data.schedule.length > 0) {
-                data.schedule.forEach(l => {
-                    html += `<li class="list-group-item">
-                        <strong>${l.startTime}</strong>: ${l.title} <br>
-                        <small>${l.room}</small>
-                    </li>`;
-                });
-            } else {
-                html += '<li class="list-group-item">No upcoming classes found.</li>';
+            document.getElementById('scheduleContent').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2 text-muted">Fetching live data from SEAtS...</div>
+                </div>`;
+            document.getElementById('userInfo').innerHTML = '';
+
+            try {
+                const res = await fetch(`/schedule/${id}`);
+                const data = await res.json();
+                
+                // Show User Info
+                if (data.user) {
+                    document.getElementById('userInfo').innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-badge fs-3 me-3"></i>
+                            <div>
+                                <div class="fw-bold">${data.user.name}</div>
+                                <div class="small opacity-75">${data.user.email} | ${data.user.studentId}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Show Lessons
+                let html = '<div class="list-group list-group-flush">';
+                if (data.schedule && data.schedule.length > 0) {
+                    data.schedule.forEach(l => {
+                        html += `
+                        <div class="list-group-item lesson-item p-3 d-flex justify-content-between align-items-center shadow-sm rounded mb-2 border-0">
+                            <div>
+                                <div class="lesson-time"><i class="bi bi-clock"></i> ${l.startTime}</div>
+                                <div class="lesson-title">${l.title}</div>
+                                <div class="lesson-room"><i class="bi bi-geo-alt"></i> ${l.room}</div>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm fw-bold" 
+                                onclick="manualCheckIn(${l.ids.timetableId}, ${l.ids.studentScheduleId}, '${l.title.replace(/'/g, "\\'")}')">
+                                <i class="bi bi-check-circle-fill"></i> Check In Now
+                            </button>
+                        </div>`;
+                    });
+                } else {
+                    html += `
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                        No upcoming classes found for the next 7 days.
+                    </div>`;
+                }
+                html += '</div>';
+                document.getElementById('scheduleContent').innerHTML = html;
+
+            } catch (err) {
+                document.getElementById('scheduleContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Error loading schedule: ${err}
+                    </div>`;
             }
-            html += '</ul>';
-            document.getElementById('scheduleContent').innerHTML = html;
+        }
+
+        async function manualCheckIn(timetableId, studentScheduleId, title) {
+            if(!confirm(`Force check-in for "${title}"?\nThis will send a request immediately.`)) return;
+
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+
+            try {
+                const res = await fetch(`/checkin/${currentUserId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        timetable_id: timetableId,
+                        student_schedule_id: studentScheduleId
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    btn.className = "btn btn-success btn-sm fw-bold";
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> Done!';
+                    alert(`Success! Check-in Code: ${result.checkinCode || 'N/A'}`);
+                } else {
+                    btn.className = "btn btn-danger btn-sm fw-bold";
+                    btn.innerHTML = '<i class="bi bi-x-circle"></i> Failed';
+                    alert(`Failed: ${result.error || 'Unknown error'}`);
+                    // Reset
+                    setTimeout(() => {
+                        btn.className = "btn btn-outline-success btn-sm fw-bold";
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }, 3000);
+                }
+            } catch (e) {
+                alert("Network error occurred.");
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
     </script>
 </body>
