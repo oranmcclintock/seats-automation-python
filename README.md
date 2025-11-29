@@ -3,138 +3,116 @@
 
 # SEAtS Attendance Automation (Web Platform)
 
-**DISCLAIMER: EDUCATIONAL & SECURITY RESEARCH ONLY**  
-This project is a proof-of-concept created to demonstrate security weaknesses within the SEAtS attendance system.  
-It must not be used to violate university policies or misrepresent attendance.  
-This repository does not provide tools, instructions, or guidance for acquiring authentication tokens.
+[Dashboard View]: https://github.com/user-attachments/assets/7d7f8aa3-24ae-45b2-85e6-1dbb3f1cc648
+[Mobile View]: https://github.com/user-attachments/assets/0be0841b-bae5-49c7-88e8-f3a9e14678e1
+
+> DISCLAIMER: EDUCATIONAL & SECURITY RESEARCH ONLY
+> This project is a Proof-of-Concept (PoC) designed to highlight security flaws in the SEAtS attendance system. It is not intended for violating university policies or misrepresenting attendance. This repository does not provide tools to steal authentication tokens.
 
 ---
 
 ## 1. Project Overview
 
-This application is a fully automated, web-based dashboard for managing SEAtS attendance. It demonstrates how the current Bluetooth-based presence verification system can be bypassed through standard API automation due to weaknesses in SEAtS authentication and client-side trust.
+This is a fully automated, web-based dashboard built to handle SEAtS attendance. The goal is to demonstrate how easily the current Bluetooth-based verification can be bypassed using standard API automation, primarily due to weak authentication protocols and excessive client-side trust.
 
-Unlike earlier CLI versions, this release operates as a persistent FastAPI web service capable of:
-
-- Managing multiple student accounts  
-- Synchronising timetable data  
-- Automatically performing attendance check-ins at scheduled times  
-
-This project is intended solely for security research and responsible disclosure.
-
----
+This is a persistent FastAPI web service capable of:
+- Managing multiple student accounts simultaneously.
+- Synchronising timetable data automatically.
+- Handling attendance check-ins in the background.
 
 ## 2. Key Features
 
 ### Web Dashboard
-A modern, responsive Bootstrap 5 interface for managing accounts and viewing schedules.
+A clean, responsive interface built with Bootstrap 5 to manage accounts and view upcoming schedules.
 
 ### Multi-Tenant Architecture
-SQLite and SQLAlchemy provide durable storage for multiple student profiles and scheduled tasks.
+Backed by SQLite and SQLAlchemy, allowing persistent storage for multiple student profiles and scheduled tasks.
 
 ### Smart Scheduling
-- Polls the SEAtS API every 30 minutes  
-- Extracts event details and beacon UUIDs  
-- Schedules attendance submissions at the exact class start time with optional randomised delays  
+- **Auto-Poll:** Checks the SEAtS API every 30 minutes for updates.
+- **Data Extraction:** Extracts event details and the specific Beacon UUIDs required for check-in.
+- **Precision:** Schedules the check-in request for the exact class start time with a randomized delay to appear human.
 
 ### Discord Webhook Notifications
-Provides real-time alerts for:
-- Successful check-ins  
-- Errors or API failures  
-- Token expiration or invalidation  
+Sends real-time alerts for:
+- Successful check-ins.
+- API errors or failures.
+- Token expiration warnings.
 
 ### Fingerprint Generation
-Implements the cryptographic logic required to produce valid `fp` fingerprint values accepted by the official SEAtS mobile API.
-
----
+Implements the cryptographic logic required to generate valid `fp` (fingerprint) values, ensuring the API accepts requests as if they originated from the official mobile app.
 
 ## 3. Technical Architecture
 
-Backend: FastAPI (asynchronous Python server)  
-Database: SQLite + SQLAlchemy ORM  
-Scheduling: APScheduler (BackgroundScheduler)  
-Frontend: Jinja2 templates with mobile optimisation  
+- **Backend:** FastAPI (Async Python)
+- **Database:** SQLite + SQLAlchemy ORM
+- **Scheduling:** APScheduler (BackgroundScheduler)
+- **Frontend:** Jinja2 Templates + Mobile Optimized CSS
 
 ### Automation Workflow
 
-1. **Sync:** Poll the `/api/v2/students/myself/events` endpoint every 30 minutes.  
-2. **Parse:** Extract class metadata and the leaked Bluetooth Beacon UUID.  
-3. **Schedule:** Queue background jobs 0–60 seconds after class start time.  
-4. **Execute:** Perform a crafted POST to the SEAtS `/checkin` endpoint, imitating official mobile client behaviour.
+1. **Sync:** Polls `/api/v2/students/myself/events` every 30 minutes.
+2. **Parse:** Scrapes class metadata and the leaked Bluetooth Beacon UUID.
+3. **Schedule:** Queues a background job to fire 0–60 seconds after class start.
+4. **Execute:** Sends a crafted POST request to `/checkin`, mimicking the mobile client.
 
----
-
-## 4. Security Vulnerabilities Demonstrated
+## 4. Security Vulnerabilities Exposed
 
 ### Critical: Excessive Token Longevity
-SEAtS access tokens have a 10-year expiration (valid until 2035).  
-Once intercepted, long-term persistent access is possible without reauthentication.
+The access tokens SEAtS issues are valid for 10 years (expiry set to 2035). If a token is intercepted once, an attacker has persistent access indefinitely without re-authentication.
 
 ### High: Information Leakage (Beacon UUIDs)
-Timetable responses contain valid Bluetooth Beacon UUIDs used for physical presence verification.  
-These can be replayed remotely to spoof attendance.
+The API response for student timetables contains the valid Bluetooth Beacon UUIDs used for physical presence verification. This allows for remote "replay" attacks to spoof attendance.
 
-### Medium: Lack of Client Integrity Checks
-No device attestation, IP reputation filtering, or anti-automation checks are enforced.  
-The API accepts generic HTTP requests that mimic the mobile app.
-
----
+### Medium: Lack of Client Integrity
+There are no checks for device attestation, IP reputation, or anti-automation. The API accepts generic HTTP requests provided the headers mimic the standard client.
 
 ## 5. Installation and Usage
 
 ### Requirements
 - Python 3.10+
-- A valid SEAtS Bearer Token (not provided)
-
----
+- A valid SEAtS Bearer Token.
 
 ### Installation
 
-Create a virtual environment (recommended):
+Clone the repository and create a virtual environment:
 
-```bash
+```
+git clone https://github.com/oranmcclintock/seats-automation-python.git
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 ```
 
 Install dependencies:
 
-```bash
+```
 pip install -r requirements.txt
 ```
 
-Running the Server
+### Running the Server
 
-Start the FastAPI application with Uvicorn:
+Start the FastAPI application:
 
-```bash
-
+```
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Access the web dashboard:
-
-```bash
-http://localhost:8000
-```
+Access the dashboard at `http://localhost:8000`.
 
 ### Operation
 
-1. Open the dashboard and click Add User.
+1. Open the dashboard and click **Add User**.
 2. Paste your SEAtS Bearer Token.
-3. The system retrieves your profile and token expiry.
-4. Toggle the automation switch to enable automatic attendance handling.
+3. The system will retrieve your profile and display the token expiry date.
+4. Toggle the **Automation** switch.
 
 The system will now schedule and submit all future check-ins automatically.
 
 ## 6. Mitigation Recommendations
 
-To address the vulnerabilities demonstrated:
+To address these vulnerabilities:
 
-- Reduce Access Token lifetime to under one hour and enforce refresh-token rotation.
-
-- Remove Beacon UUIDs from client-visible API fields.
-
-- Implement mobile device integrity checks (Android Play Integrity, iOS DeviceCheck).
-
-- Perform server-side validation of attendance submissions rather than trusting client beacon data.
+- **Reduce Token Lifetime:** Expire access tokens in under one hour and enforce refresh token rotation.
+- **Remove Beacon Data:** Stop sending Beacon UUIDs in client-visible API responses.
+- **Device Verification:** Implement Android Play Integrity or iOS DeviceCheck.
+- **Server-Side Validation:** Validate attendance based on trusted network signals rather than trusting client-submitted beacon data.
