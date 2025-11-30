@@ -2,31 +2,16 @@ import requests
 import json
 import base64
 import time
+import os
 from datetime import datetime
 from datetime import timedelta, timezone 
 
-TENANT_ID = "126"
-API_HOST = "01v2mobileapi.seats.cloud"
-
+# ENV VARS (With defaults)
+API_HOST = os.getenv("API_HOST", "01v2mobileapi.seats.cloud")
 
 def _extract_raw_token(token: str) -> str:
     t = (token or "").strip()
     return t[7:] if t.startswith("Bearer ") else t
-
-
-def getHeaders(token: str):
-    cleanToken = token.strip()
-    if not cleanToken.startswith("Bearer "):
-        cleanToken = f"Bearer {cleanToken}"
-    return {
-        "Authorization": cleanToken,
-        "Abp.TenantId": TENANT_ID,
-        "Host": API_HOST,
-        "User-Agent": "SeatsMobile/1728493384 CFNetwork/1568.100.1.2.1 Darwin/24.0.0",
-        "Accept": "*/*",
-        "Content-Type": "application/json",
-    }
-
 
 def decodeJwt(token):
     try:
@@ -37,6 +22,22 @@ def decodeJwt(token):
     except Exception:
         return {}
 
+def getHeaders(token: str):
+    tokenData = decodeJwt(token)
+    tenant_id = tokenData.get("TenantId", "126") # Fallback to 126
+
+    cleanToken = token.strip()
+    if not cleanToken.startswith("Bearer "):
+        cleanToken = f"Bearer {cleanToken}"
+        
+    return {
+        "Authorization": cleanToken,
+        "Abp.TenantId": tenant_id,  
+        "Host": API_HOST,
+        "User-Agent": "SeatsMobile/1728493384 CFNetwork/1568.100.1.2.1 Darwin/24.0.0",
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+    }
 
 def fetchProfile(token: str):
     url = f"https://{API_HOST}/api/v1/students/myself/profile"
@@ -47,7 +48,6 @@ def fetchProfile(token: str):
     except Exception:
         pass
     return None
-
 
 def fetchTimetable(token: str):
     startDate = int(time.time())
@@ -67,41 +67,32 @@ def fetchTimetable(token: str):
         pass
     return []
 
-
 def fetchUserData(token: str):
     tokenData = decodeJwt(token)
     profileData = fetchProfile(token)
     timetableData = fetchTimetable(token)
 
     userName = tokenData.get("name") if isinstance(tokenData.get("name"), str) else "Unknown"
-    userEmail = "N/A"  # Default to N/A
+    userEmail = "N/A"
 
-    # Robust Name/Email Extraction
     name_field = tokenData.get("name")
     if isinstance(name_field, list) and len(name_field) >= 2:
         userName = name_field[0]
         userEmail = name_field[1]
 
-    # If profileData exists, try to get email from there
     if profileData and profileData.get('email'):
         userEmail = profileData.get('email')
 
     def fmt_ts(ts):
         try:
-            # Ensure safe conversion even without explicit timezone import (relying on system)
             return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
         except Exception:
             return "Unknown"
 
     cleanTimetable = []
-    # Loop safely over timetableData, which should be a list
     for lesson in timetableData or []:
         beaconData = lesson.get("iBeaconData", [])
-
-        # Store full iBeaconData list for random selection later in checkIn.py
-        beacon_data_list = []
-        if beaconData and isinstance(beaconData, list):
-            beacon_data_list = beaconData
+        beacon_data_list = beaconData if isinstance(beaconData, list) else []
 
         start_ts = lesson.get("start")
         cleanTimetable.append(
@@ -113,7 +104,6 @@ def fetchUserData(token: str):
                     "timetableId": lesson.get("timeTableId"),
                     "studentScheduleId": lesson.get("studentScheduleId"),
                 },
-                # Store the full list for random selection in performCheckIn
                 "auth": {"beaconData": beacon_data_list},
             }
         )
@@ -133,7 +123,6 @@ def fetchUserData(token: str):
 
     return finalData
 
-
 def fetchMobilePhoneSetting(token: str):
     url = f"https://{API_HOST}/api/v1/app/settingsextended"
     try:
@@ -146,7 +135,6 @@ def fetchMobilePhoneSetting(token: str):
     except Exception as e:
         print(f"Error fetching mobile setting: {e}")
     return None
-
 
 if __name__ == "__main__":
     print("This module is intended to be used by the CLI. Provide a token to fetchUserData(token).")
