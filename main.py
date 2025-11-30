@@ -14,6 +14,7 @@ import models
 import schemas
 from getUserData import fetchUserData, fetchMobilePhoneSetting
 from checkIn import performCheckIn
+from encryption import LocalEncryption # Import the new class
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SeatsApp")
@@ -24,16 +25,19 @@ app = FastAPI(title="SEAtS Automation Web App")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# RELIABILITY FIX: Point to the new data folder
 jobstores = {
     'default': SQLAlchemyJobStore(url='sqlite:///./data/seats_app.db')
 }
 scheduler = BackgroundScheduler(jobstores=jobstores)
 
-def automated_check_in_task(token: str, lesson: dict, user_id: str, mobile_key: str, webhook_url: str):
+def automated_check_in_task(encrypted_token: str, lesson: dict, user_id: str, mobile_key: str, webhook_url: str):
     logger.info(f"Executing Check-in for {user_id} - {lesson.get('title')}")
+    
+    # SECURITY: Decrypt token just before use
+    real_token = LocalEncryption.decrypt(encrypted_token)
+    
     try:
-        performCheckIn(token, lesson, user_id, mobile_key, webhook_url)
+        performCheckIn(real_token, lesson, user_id, mobile_key, webhook_url)
     except Exception as e:
         logger.error(f"Check-in failed: {e}")
 
@@ -46,7 +50,10 @@ def schedule_refresh_job():
 
     for user in users:
         try:
-            data = fetchUserData(user.token)
+            # SECURITY: Decrypt token to fetch data
+            real_token = LocalEncryption.decrypt(user.token)
+            
+            data = fetchUserData(real_token)
             if not data or "schedule" not in data:
                 continue
 
@@ -54,10 +61,8 @@ def schedule_refresh_job():
             schedule = data.get("schedule", [])
 
             for lesson in schedule:
-                # Unique Job ID: StudentID-TimetableID
                 lid = f"{student_id}-{lesson['ids']['timetableId']}"
                 
-                # RELIABILITY FIX: Check DB instead of RAM cache
                 if scheduler.get_job(lid):
                     continue
 
@@ -66,13 +71,14 @@ def schedule_refresh_job():
                 except ValueError:
                     continue
 
-                # Schedule check-in: 1 min before start +/- random offset
                 random_offset = random.randint(-60, 60)
                 target_time = start_dt - timedelta(minutes=1) + timedelta(seconds=random_offset)
 
                 if now < target_time < now + timedelta(hours=24):
                     logger.info(f"Scheduling {user.alias}: {lesson['title']} at {target_time}")
                     
+                    # NOTE: We pass user.token (which is ENCRYPTED) to the job. 
+                    # This means the job arguments in the DB are also safe.
                     scheduler.add_job(
                         automated_check_in_task,
                         'date',
@@ -87,18 +93,13 @@ def schedule_refresh_job():
 
 @app.on_event("startup")
 def start_scheduler():
-    # RELIABILITY FIX: Enable WAL mode for better concurrency
     with engine.connect() as connection:
         connection.exec_driver_sql("PRAGMA journal_mode=WAL;")
         
     if not scheduler.running:
         scheduler.start()
-
-        # Add the refresh job if it doesn't exist
         if not scheduler.get_job("main_refresh_job"):
              scheduler.add_job(schedule_refresh_job, 'interval', minutes=30, id="main_refresh_job")
-        
-        # Run once immediately on startup
         scheduler.add_job(schedule_refresh_job, 'date', run_date=datetime.now() + timedelta(seconds=5))
 
 @app.on_event("shutdown")
@@ -109,6 +110,7 @@ def shutdown_scheduler():
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, db: Session = Depends(get_db)):
+
     users = db.query(models.User).all()
     user_agent = request.headers.get("User-Agent", "").lower()
     is_mobile = "mobile" in user_agent or "android" in user_agent or "iphone" in user_agent
@@ -117,13 +119,16 @@ def read_root(request: Request, db: Session = Depends(get_db)):
 
 @app.post("/users/", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+
     mobile_key = fetchMobilePhoneSetting(user.token)
     if not mobile_key:
         raise HTTPException(status_code=400, detail="Could not fetch Mobile Signing Key from token.")
 
+    encrypted_token = LocalEncryption.encrypt(user.token)
+
     db_user = models.User(
         alias=user.alias,
-        token=user.token,
+        token=encrypted_token, 
         mobile_key=mobile_key,
         webhook_url=user.webhook_url
     )
@@ -158,7 +163,10 @@ def get_user_schedule(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    data = fetchUserData(user.token)
+    # SECURITY: Decrypt before use
+    real_token = LocalEncryption.decrypt(user.token)
+    
+    data = fetchUserData(real_token)
     return data
 
 @app.post("/checkin/{user_id}")
@@ -167,7 +175,10 @@ def manual_checkin(user_id: int, req: schemas.CheckInRequest, db: Session = Depe
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    data = fetchUserData(user.token)
+    # SECURITY: Decrypt before use
+    real_token = LocalEncryption.decrypt(user.token)
+
+    data = fetchUserData(real_token)
     if not data or "schedule" not in data:
         raise HTTPException(status_code=500, detail="Failed to fetch schedule from SEAtS")
 
@@ -183,5 +194,5 @@ def manual_checkin(user_id: int, req: schemas.CheckInRequest, db: Session = Depe
     if not target_lesson:
         raise HTTPException(status_code=404, detail="Lesson not found in current schedule")
 
-    result = performCheckIn(user.token, target_lesson, student_id, user.mobile_key, user.webhook_url)
+    result = performCheckIn(real_token, target_lesson, student_id, user.mobile_key, user.webhook_url)
     return result
