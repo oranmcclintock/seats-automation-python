@@ -84,7 +84,7 @@ cd seats-automation-python/
 docker compose up 
 ```
 
-Access the dashboard at `http://localhost:8000`.
+Access the dashboard at `http://localhost:8085`.
 
 ### Operation
 
