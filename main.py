@@ -1,188 +1,104 @@
 import time
-import random
-import logging
-from datetime import datetime, timedelta
-from typing import List
-from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
-from sqlalchemy.orm import Session
-from apscheduler.schedulers.background import BackgroundScheduler
-from database import engine, Base, get_db
-import models
-import schemas
-from getUserData import fetchUserData, fetchMobilePhoneSetting
-from checkIn import performCheckIn
+from datetime import datetime
+from utils import get_headers, get_session, decode_jwt, API_HOST
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("SeatsApp")
-
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="SEAtS Automation Web App")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-scheduler = BackgroundScheduler()
-scheduled_lessons_cache = set()
-
-def automated_check_in_task(token: str, lesson: dict, user_id: str, mobile_key: str, webhook_url: str):
-    logger.info(f"Executing Check-in for {user_id} - {lesson.get('title')}")
+def fetchProfile(token: str):
+    url = f"https://{API_HOST}/api/v1/students/myself/profile"
     try:
-        performCheckIn(token, lesson, user_id, mobile_key, webhook_url)
+        # RELIABILITY FIX: Use session with retry
+        response = get_session().get(url, headers=get_headers(token))
+        if response.status_code == 200:
+            return response.json()
+    except Exception:
+        pass
+    return None
+
+def fetchTimetable(token: str):
+    startDate = int(time.time())
+    endDate = startDate + (7 * 24 * 60 * 60)
+
+    url = f"https://{API_HOST}/api/v2/students/myself/events"
+    params = {"startDate": startDate, "endDate": endDate}
+
+    try:
+        response = get_session().get(url, headers=get_headers(token), params=params)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"ERROR: fetchTimetable failed with status {response.status_code}")
     except Exception as e:
-        logger.error(f"Check-in failed: {e}")
+        print(f"ERROR: fetchTimetable failed due to network/request issue: {e}")
+        pass
+    return []
 
-def schedule_refresh_job():
-    logger.info("Running Schedule Refresh...")
-    db = next(get_db())
-    users = db.query(models.User).filter(models.User.is_active == True).all()
-    
-    now = datetime.now()
+def fetchUserData(token: str):
+    tokenData = decode_jwt(token)
+    profileData = fetchProfile(token)
+    timetableData = fetchTimetable(token)
 
-    for user in users:
+    userName = tokenData.get("name") if isinstance(tokenData.get("name"), str) else "Unknown"
+    userEmail = "N/A"
+
+    name_field = tokenData.get("name")
+    if isinstance(name_field, list) and len(name_field) >= 2:
+        userName = name_field[0]
+        userEmail = name_field[1]
+
+    if profileData and profileData.get('email'):
+        userEmail = profileData.get('email')
+
+    def fmt_ts(ts):
         try:
-            data = fetchUserData(user.token)
-            if not data or "schedule" not in data:
-                continue
+            return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return "Unknown"
 
-            student_id = data["user"].get("studentId")
-            schedule = data.get("schedule", [])
+    cleanTimetable = []
+    for lesson in timetableData or []:
+        beaconData = lesson.get("iBeaconData", [])
+        beacon_data_list = beaconData if isinstance(beaconData, list) else []
 
-            for lesson in schedule:
-                lid = f"{student_id}-{lesson['ids']['timetableId']}"
-                
-                if lid in scheduled_lessons_cache:
-                    continue
+        start_ts = lesson.get("start")
+        cleanTimetable.append(
+            {
+                "title": lesson.get("title"),
+                "room": lesson.get("roomName"),
+                "startTime": fmt_ts(start_ts),
+                "ids": {
+                    "timetableId": lesson.get("timeTableId"),
+                    "studentScheduleId": lesson.get("studentScheduleId"),
+                },
+                "auth": {"beaconData": beacon_data_list},
+            }
+        )
 
-                try:
-                    start_dt = datetime.strptime(lesson['startTime'], '%Y-%m-%d %H:%M:%S')
-                except ValueError:
-                    continue
+    exp_ts = tokenData.get("exp")
+    finalData = {
+        "user": {
+            "name": userName,
+            "email": userEmail,
+            "studentId": tokenData.get("studentId"),
+            "tenantId": tokenData.get("TenantId"),
+            "tokenExpiration": fmt_ts(exp_ts),
+        },
+        "profileDetails": profileData,
+        "schedule": cleanTimetable,
+    }
 
-                # Schedule check-in: 1 min before start +/- random offset
-                random_offset = random.randint(-60, 60)
-                target_time = start_dt - timedelta(minutes=1) + timedelta(seconds=random_offset)
+    return finalData
 
-                if now < target_time < now + timedelta(hours=24):
-                    logger.info(f"Scheduling {user.alias}: {lesson['title']} at {target_time}")
-                    
-                    scheduler.add_job(
-                        automated_check_in_task,
-                        'date',
-                        run_date=target_time,
-                        args=[user.token, lesson, student_id, user.mobile_key, user.webhook_url],
-                        id=lid,
-                        replace_existing=True
-                    )
-                    scheduled_lessons_cache.add(lid)
+def fetchMobilePhoneSetting(token: str):
+    url = f"https://{API_HOST}/api/v1/app/settingsextended"
+    try:
+        response = get_session().get(url, headers=get_headers(token))
+        if response.status_code == 200:
+            data = response.json()
+            for setting in data:
+                if setting.get("key") == "MobilePhone":
+                    return setting.get("value")
+    except Exception as e:
+        print(f"Error fetching mobile setting: {e}")
+    return None
 
-        except Exception as e:
-            logger.error(f"Error processing user {user.alias}: {e}")
-
-@app.on_event("startup")
-def start_scheduler():
-    if not scheduler.running:
-        scheduler.add_job(schedule_refresh_job, 'interval', minutes=30)
-        scheduler.start()
-        scheduler.add_job(schedule_refresh_job, 'date', run_date=datetime.now() + timedelta(seconds=5))
-
-@app.on_event("shutdown")
-def shutdown_scheduler():
-    scheduler.shutdown()
-
-# --- API Routes ---
-
-# In main.py
-
-@app.get("/", response_class=HTMLResponse)
-def read_root(request: Request, db: Session = Depends(get_db)):
-    users = db.query(models.User).all()
-    
-    user_agent = request.headers.get("User-Agent", "").lower()
-    
-    # Simple check for common mobile keywords
-    is_mobile = "mobile" in user_agent or "android" in user_agent or "iphone" in user_agent
-    
-    # Choose the appropriate template
-    template_name = "mobile.html" if is_mobile else "index.html"
-    
-    return templates.TemplateResponse(template_name, {"request": request, "users": users})
-
-@app.post("/users/", response_model=schemas.UserResponse)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    mobile_key = fetchMobilePhoneSetting(user.token)
-    if not mobile_key:
-        raise HTTPException(status_code=400, detail="Could not fetch Mobile Signing Key from token.")
-
-    db_user = models.User(
-        alias=user.alias,
-        token=user.token,
-        mobile_key=mobile_key,
-        webhook_url=user.webhook_url
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    scheduler.add_job(schedule_refresh_job, 'date', run_date=datetime.now() + timedelta(seconds=2))
-    return db_user
-
-@app.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    db.delete(user)
-    db.commit()
-    return {"ok": True}
-
-@app.patch("/users/{user_id}/toggle")
-def toggle_user_active(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user.is_active = not user.is_active
-    db.commit()
-    return {"id": user.id, "is_active": user.is_active}
-
-@app.get("/schedule/{user_id}")
-def get_user_schedule(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    data = fetchUserData(user.token)
-    return data
-
-@app.post("/checkin/{user_id}")
-def manual_checkin(user_id: int, req: schemas.CheckInRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # 1. Fetch fresh schedule to get beacon data
-    data = fetchUserData(user.token)
-    if not data or "schedule" not in data:
-        raise HTTPException(status_code=500, detail="Failed to fetch schedule from SEAtS")
-
-    student_id = data["user"].get("studentId")
-    
-    # 2. Find the specific lesson
-    target_lesson = None
-    for lesson in data["schedule"]:
-        # Compare IDs
-        if (lesson["ids"]["timetableId"] == req.timetable_id and 
-            lesson["ids"]["studentScheduleId"] == req.student_schedule_id):
-            target_lesson = lesson
-            break
-    
-    if not target_lesson:
-        raise HTTPException(status_code=404, detail="Lesson not found in current schedule")
-
-    # 3. Perform Check-in
-    result = performCheckIn(user.token, target_lesson, student_id, user.mobile_key, user.webhook_url)
-    
-    return result
+if __name__ == "__main__":
+    print("This module is intended to be used by the CLI. Provide a token to fetchUserData(token).")
