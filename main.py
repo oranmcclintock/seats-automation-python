@@ -24,10 +24,9 @@ app = FastAPI(title="SEAtS Automation Web App")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# RELIABILITY FIX: Persistent Job Store
-# This ensures scheduled check-ins survive a restart.
+# RELIABILITY FIX: Point to the new data folder
 jobstores = {
-    'default': SQLAlchemyJobStore(url='sqlite:///./seats_app.db')
+    'default': SQLAlchemyJobStore(url='sqlite:///./data/seats_app.db')
 }
 scheduler = BackgroundScheduler(jobstores=jobstores)
 
@@ -95,10 +94,11 @@ def start_scheduler():
     if not scheduler.running:
         scheduler.start()
 
-        
-        # Run once immediately on startu        # Add the refresh job if it doesn't exist
+        # Add the refresh job if it doesn't exist
         if not scheduler.get_job("main_refresh_job"):
              scheduler.add_job(schedule_refresh_job, 'interval', minutes=30, id="main_refresh_job")
+        
+        # Run once immediately on startup
         scheduler.add_job(schedule_refresh_job, 'date', run_date=datetime.now() + timedelta(seconds=5))
 
 @app.on_event("shutdown")
