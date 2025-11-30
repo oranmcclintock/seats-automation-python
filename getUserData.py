@@ -1,48 +1,12 @@
-import requests
-import json
-import base64
 import time
-import os
 from datetime import datetime
-from datetime import timedelta, timezone 
-
-# ENV VARS (With defaults)
-API_HOST = os.getenv("API_HOST", "01v2mobileapi.seats.cloud")
-
-def _extract_raw_token(token: str) -> str:
-    t = (token or "").strip()
-    return t[7:] if t.startswith("Bearer ") else t
-
-def decodeJwt(token):
-    try:
-        payloadPart = _extract_raw_token(token).split(".")[1]
-        padding = "=" * ((4 - len(payloadPart) % 4) % 4)
-        decodedBytes = base64.urlsafe_b64decode(payloadPart + padding)
-        return json.loads(decodedBytes)
-    except Exception:
-        return {}
-
-def getHeaders(token: str):
-    tokenData = decodeJwt(token)
-    tenant_id = tokenData.get("TenantId", "126") # Fallback to 126
-
-    cleanToken = token.strip()
-    if not cleanToken.startswith("Bearer "):
-        cleanToken = f"Bearer {cleanToken}"
-        
-    return {
-        "Authorization": cleanToken,
-        "Abp.TenantId": tenant_id,  
-        "Host": API_HOST,
-        "User-Agent": "SeatsMobile/1728493384 CFNetwork/1568.100.1.2.1 Darwin/24.0.0",
-        "Accept": "*/*",
-        "Content-Type": "application/json",
-    }
+from utils import get_headers, get_session, decode_jwt, API_HOST
 
 def fetchProfile(token: str):
     url = f"https://{API_HOST}/api/v1/students/myself/profile"
     try:
-        response = requests.get(url, headers=getHeaders(token))
+        # RELIABILITY FIX: Use session with retry
+        response = get_session().get(url, headers=get_headers(token))
         if response.status_code == 200:
             return response.json()
     except Exception:
@@ -57,7 +21,7 @@ def fetchTimetable(token: str):
     params = {"startDate": startDate, "endDate": endDate}
 
     try:
-        response = requests.get(url, headers=getHeaders(token), params=params)
+        response = get_session().get(url, headers=get_headers(token), params=params)
         if response.status_code == 200:
             return response.json()
         else:
@@ -68,7 +32,7 @@ def fetchTimetable(token: str):
     return []
 
 def fetchUserData(token: str):
-    tokenData = decodeJwt(token)
+    tokenData = decode_jwt(token)
     profileData = fetchProfile(token)
     timetableData = fetchTimetable(token)
 
@@ -126,7 +90,7 @@ def fetchUserData(token: str):
 def fetchMobilePhoneSetting(token: str):
     url = f"https://{API_HOST}/api/v1/app/settingsextended"
     try:
-        response = requests.get(url, headers=getHeaders(token))
+        response = get_session().get(url, headers=get_headers(token))
         if response.status_code == 200:
             data = response.json()
             for setting in data:
