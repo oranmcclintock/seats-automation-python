@@ -3,44 +3,9 @@ import os
 import requests
 import time
 import random
-import base64
 from datetime import datetime
 from encryption import Encryption
-
-# ENV VARS
-API_HOST = os.getenv("API_HOST", "01v2mobileapi.seats.cloud")
-
-def _extract_raw_token(token: str) -> str:
-    t = (token or "").strip()
-    return t[7:] if t.startswith("Bearer ") else t
-
-def decodeJwt(token):
-    """Decodes the JWT to extract TenantId without verifying signature."""
-    try:
-        payloadPart = _extract_raw_token(token).split(".")[1]
-        padding = "=" * ((4 - len(payloadPart) % 4) % 4)
-        decodedBytes = base64.urlsafe_b64decode(payloadPart + padding)
-        return json.loads(decodedBytes)
-    except Exception:
-        return {}
-
-def getHeaders(token):
-    # DYNAMIC FIX: Extract TenantId from token
-    tokenData = decodeJwt(token)
-    tenant_id = tokenData.get("TenantId", "126") # Fallback to 126
-
-    cleanToken = token.strip()
-    if not cleanToken.startswith("Bearer "):
-        cleanToken = f"Bearer {cleanToken}"
-
-    return {
-        "Authorization": cleanToken,
-        "Abp.TenantId": tenant_id,
-        "Host": API_HOST,
-        "User-Agent": "SeatsMobile/1728493384 CFNetwork/1568.100.1.2.1 Darwin/24.0.0",
-        "Accept": "*/*",
-        "Content-Type": "application/json"
-    }
+from utils import get_headers, get_session, API_HOST
 
 def log_response(user_id, endpoint, response_text):
     """Saves raw API responses to disk for debugging."""
@@ -68,6 +33,7 @@ def send_discord_webhook(success, lesson_title, user_id, error_msg=None, checkin
         embed["fields"].append({"name": "Error", "value": str(error_msg), "inline": False})
 
     try:
+        # Webhooks don't need our custom session/headers logic
         requests.post(webhook_url, json={"embeds": [embed]})
     except Exception as e:
         print(f"Discord Error: {e}")
@@ -98,7 +64,7 @@ def performCheckIn(token, lesson, user_id="Unknown", mobile_phone_val=None, webh
         print(f"Error: {error_msg}")
         return {"success": False, "code": 0, "error": error_msg}
 
-    # 3. Calculate Fingerprint
+    # Calculate Fingerprint
     fp_input = f"{timestamp}{timetable_id}{student_schedule_id}{check_in_reason}{check_in_input or ''}"
     fingerprint = Encryption.compute_fingerprint(fp_input, mobile_phone_val)
 
@@ -114,10 +80,9 @@ def performCheckIn(token, lesson, user_id="Unknown", mobile_phone_val=None, webh
     }
 
     try:
-        # 4. Send Request
-        response = requests.post(url, headers=getHeaders(token), json=payload)
+        # RELIABILITY FIX: Use session with retry
+        response = get_session().post(url, headers=get_headers(token), json=payload)
 
-        # 5. Log & Notify
         log_response(user_id, "CheckIn", response.text)
 
         success = response.status_code in [200, 201]
