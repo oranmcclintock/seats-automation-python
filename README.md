@@ -71,16 +71,17 @@ There are no checks for device attestation, IP reputation, or anti-automation. T
 
 ### Requirements
 - Python 3.10+
+- Docker
 - A valid SEAtS Bearer Token.
 
 ### Installation
 
-Clone the repository and create a virtual environment:
+Clone the repository and run docker container:
 
 ```
-git clone https://github.com/oranmcclintock/seats-automation-python.git
-python3 -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+ git clone https://github.com/oranmcclintock/seats-automation-python
+cd seats-automation-python/
+docker compose up 
 ```
 
 Install dependencies:
