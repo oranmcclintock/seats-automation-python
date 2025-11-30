@@ -79,23 +79,9 @@ There are no checks for device attestation, IP reputation, or anti-automation. T
 Clone the repository and run docker container:
 
 ```
- git clone https://github.com/oranmcclintock/seats-automation-python
+git clone https://github.com/oranmcclintock/seats-automation-python
 cd seats-automation-python/
 docker compose up 
-```
-
-Install dependencies:
-
-```
-pip install -r requirements.txt
-```
-
-### Running the Server
-
-Start the FastAPI application:
-
-```
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Access the dashboard at `http://localhost:8000`.
