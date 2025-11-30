@@ -33,7 +33,6 @@ def send_discord_webhook(success, lesson_title, user_id, error_msg=None, checkin
         embed["fields"].append({"name": "Error", "value": str(error_msg), "inline": False})
 
     try:
-        # Webhooks don't need our custom session/headers logic
         requests.post(webhook_url, json={"embeds": [embed]})
     except Exception as e:
         print(f"Discord Error: {e}")
@@ -80,7 +79,6 @@ def performCheckIn(token, lesson, user_id="Unknown", mobile_phone_val=None, webh
     }
 
     try:
-        # RELIABILITY FIX: Use session with retry
         response = get_session().post(url, headers=get_headers(token), json=payload)
 
         log_response(user_id, "CheckIn", response.text)
