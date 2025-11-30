@@ -4,10 +4,10 @@ services:
   seats-app:
     build: .
     container_name: seats-automation
-    restart: always
+ 
     ports:
-      - "8085:8085"
+      - "127.0.0.1:8085:8085"
+
     volumes:
       - ./seats_app.db:/app/seats_app.db
-      
       - ./request-logs:/app/request-logs
